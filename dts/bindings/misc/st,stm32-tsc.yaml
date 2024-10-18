@@ -35,15 +35,7 @@ properties:
       5: f_hclk/32
       6: f_hclk/64
       7: f_hclk/128
-    enum:
-      - 0
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
+    enum: [0, 1, 2, 3, 4, 5, 6, 7]
 
   ctph:
     type: int
@@ -51,23 +43,7 @@ properties:
     description: |
       Number of cycles for the high state of the 
       charge transfer pulse (1 to 16 cycles of t_pgclk).
-    enum:
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
-      - 11
-      - 12
-      - 13
-      - 14
-      - 15
-      - 16
+    enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 
   ctpl:
     type: int
@@ -75,23 +51,7 @@ properties:
     description: |
       Number of cycles for the low state of the 
       charge transfer pulse (1 to 16 cycles of t_pgclk).
-    enum:
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
-      - 11
-      - 12
-      - 13
-      - 14
-      - 15
-      - 16
+    enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 
   spread-spectrum:
     type: boolean
@@ -122,15 +82,7 @@ properties:
       5: 8191
       6: 16383
       7: 32767
-    enum:
-      - 0
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
+    enum: [0, 1, 2, 3, 4, 5, 6, 7]
 
   iodef-float:
     type: boolean
@@ -155,35 +107,12 @@ child-binding:
       type: int
       required: true
       description: Group number (0 to 7)
-      enum:
-        - 0
-        - 1
-        - 2
-        - 3
-        - 4
-        - 5
-        - 6
-        - 7
+      enum: [0, 1, 2, 3, 4, 5, 6, 7]
 
     channel-ios:
       type: int
       description: Channel I/Os to be enabled
-      enum:
-        - 1
-        - 2
-        - 3
-        - 4
-        - 5
-        - 6
-        - 7
-        - 8
-        - 9
-        - 10
-        - 11
-        - 12
-        - 13
-        - 14
-        - 15
+      enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 
     sampling-io:
       type: int
