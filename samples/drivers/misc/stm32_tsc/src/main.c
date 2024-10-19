@@ -51,7 +51,7 @@ int main(void)
 		printf("TSC value: %u\n", value);
 #endif
 
-		k_msleep(100);
+		k_sleep(K_MSEC(100));
 	}
 
 	return 0;

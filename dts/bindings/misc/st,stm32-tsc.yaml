@@ -23,7 +23,7 @@ properties:
 
   pulse-generator-prescaler:
     type: int
-    default: 0
+    default: 2
     description: |
       Prescaler for the pulse generator clock (t_pgclk=f_hclk/prescaler).
       The prescaler is used to generate the charge transfer pulse.
@@ -71,7 +71,7 @@ properties:
 
   max-count-value:
     type: int
-    default: 6
+    default: 5
     description: |
       Max number of charge transfer pulses before max count error is generated.
       0: 255

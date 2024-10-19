@@ -3,13 +3,13 @@
 
 #define DT_DRV_COMPAT st_stm32_tsc
 
-#include <zephyr/logging/log.h>
-#include <zephyr/kernel.h>
 #include <zephyr/irq.h>
+#include <zephyr/kernel.h>
 #include <zephyr/devicetree.h>
-#include <zephyr/drivers/pinctrl.h>
-#include <zephyr/drivers/reset.h>
 #include <zephyr/input/input.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/drivers/reset.h>
+#include <zephyr/drivers/pinctrl.h>
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
 
 LOG_MODULE_REGISTER(stm32_tsc, CONFIG_INPUT_LOG_LEVEL);
@@ -115,6 +115,7 @@ static int stm32_tsc_handle_incoming_data(const struct device *dev)
 		/* clear max count error flag */
 		sys_set_bit((mem_addr_t)&config->tsc->ICR, TSC_ICR_MCEIC_Pos);
 		LOG_ERR("TSC@%p: max count error", config->tsc);
+		LOG_HEXDUMP_DBG(config->tsc, sizeof(TSC_TypeDef), "TSC Registers");
 		return -EIO;
 	}
 
@@ -186,7 +187,7 @@ static int stm32_tsc_init(const struct device *dev)
 	}
 
 	/* set ctph (bits 31:28) and ctpl (bits 27:24) */
-	sys_set_bits((mem_addr_t)&config->tsc->CR, ((config->ctph << 4) | (config->ctpl)) << TSC_CR_CTPL_Pos);
+	sys_set_bits((mem_addr_t)&config->tsc->CR, (((config->ctph - 1) << 4) | (config->ctpl - 1)) << TSC_CR_CTPL_Pos);
 
 	/* set spread spectrum deviation (bits 23:17) */
 	sys_set_bits((mem_addr_t)&config->tsc->CR, config->ssd << TSC_CR_SSD_Pos);
@@ -309,7 +310,7 @@ static int stm32_tsc_init(const struct device *dev)
 	  .spread_spectrum = DT_INST_PROP_OR(index, spread_spectrum, false),                                                 \
 	  .sscpsc = DT_INST_PROP_OR(index, spread_spectrum_prescaler, 1),                                                    \
 	  .ssd = DT_INST_PROP_OR(index, spread_spectrum_deviation, 1),                                                       \
-	  .max_count = DT_INST_PROP_OR(index, max_count_value, 8191),                                                        \
+	  .max_count = DT_INST_PROP_OR(index, max_count_value, 5),                                                           \
 	  .iodef = DT_INST_PROP_OR(index, iodef_float, false),                                                               \
 	  .sync_acq = DT_INST_PROP_OR(index, synced_acquisition, false),                                                     \
 	  .sync_pol = DT_INST_PROP_OR(index, syncpol_rising, false),                                                         \
