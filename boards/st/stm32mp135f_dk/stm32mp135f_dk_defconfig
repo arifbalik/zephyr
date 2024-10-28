@@ -1,0 +1,20 @@
+# enable GPIO
+CONFIG_GPIO=n
+
+# Enable MPU
+CONFIG_ARM_MPU=n
+
+# Enable HW stack protection
+CONFIG_HW_STACK_PROTECTION=n
+
+# enable uart driver
+CONFIG_SERIAL=n
+CONFIG_UART_INTERRUPT_DRIVEN=n
+
+# console (remote proc console by default)
+CONFIG_CONSOLE=n
+CONFIG_RAM_CONSOLE=n
+CONFIG_RAM_CONSOLE_BUFFER_SIZE=1024
+
+# uart console (overrides remote proc console)
+CONFIG_UART_CONSOLE=n

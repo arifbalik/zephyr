@@ -1,0 +1,20 @@
+identifier: stm32mp135f_dk
+name: ST STM32MP135F-DK Discovery
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+  - xtools
+supported:
+  - arduino_i2c
+  - arduino_gpio
+  - gpio
+  - shell
+  - i2c
+  - spi
+testing:
+  ignore_tags:
+ram: 256
+flash: 64
+vendor: st

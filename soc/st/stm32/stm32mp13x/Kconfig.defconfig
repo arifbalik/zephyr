@@ -1,0 +1,10 @@
+# STMicroelectronics STM32MP13 MCU/MPU line
+
+# Copyright (c) 2024 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+if SOC_SERIES_STM32MP13X
+
+rsource "Kconfig.defconfig.stm32mp13_a7"
+
+endif # SOC_SERIES_STM32MP13X

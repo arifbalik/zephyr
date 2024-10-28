@@ -1,0 +1,30 @@
+/*
+ * Copyright (c) 2019 STMicroelectronics
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+#include <st/mp13/stm32mp135.dtsi>
+
+/ {
+	model = "STMicroelectronics STM32MP135-DK board";
+	compatible = "st,stm32mp135f-dk";
+	chosen {
+		/*
+		 * By default, Zephyr console and shell are assigned to
+		 * remoteproc. To enable console and shell over UART, uncomment
+		 * following lines and set the correct config in
+		 * stm32mp157c_dk2_defconfig "Serial Port" section in Zephyr
+		 * board documentation.
+		 * zephyr,console = &usart3;
+		 * zephyr,shell-uart = &usart3;
+		 */
+		zephyr,flash = &retram;
+		zephyr,sram = &mcusram;
+	};
+};
+
+&rcc {
+	clock-frequency = <DT_FREQ_M(209)>;
+};

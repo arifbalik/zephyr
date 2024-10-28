@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2021 Kent Hall.
+ * Copyright (c) 2024 STMicroelectronics
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -42,7 +43,7 @@ static void(*const set_timer_compare[TIMER_MAX_CH])(TIM_TypeDef *,
 };
 
 /** Channel to compare get function mapping. */
-#if !defined(CONFIG_SOC_SERIES_STM32MP1X)
+#if !defined(CONFIG_SOC_SERIES_STM32MP1X || CONFIG_SOC_SERIES_STM32MP13X)
 static uint32_t(*const get_timer_compare[TIMER_MAX_CH])(const TIM_TypeDef *) = {
 	LL_TIM_OC_GetCompareCH1, LL_TIM_OC_GetCompareCH2,
 	LL_TIM_OC_GetCompareCH3, LL_TIM_OC_GetCompareCH4,

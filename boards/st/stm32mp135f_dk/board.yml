@@ -1,0 +1,5 @@
+board:
+  name: stm32mp135f_dk
+  vendor: st
+  socs:
+    - name: stm32mp135fxx

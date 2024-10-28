@@ -66,7 +66,7 @@ static int st_stm32_common_config(void)
 #if defined(CONFIG_STM32_ENABLE_DEBUG_SLEEP_STOP)
 
 #if defined(CONFIG_SOC_SERIES_STM32H7X) || defined(CONFIG_SOC_SERIES_STM32H7RSX) \
-	|| defined(CONFIG_SOC_SERIES_STM32MP1X)
+	|| defined(CONFIG_SOC_SERIES_STM32MP1X) || defined(CONFIG_SOC_SERIES_STM32MP1X) 
 	HAL_EnableDBGStopMode();
 #elif defined(CONFIG_SOC_SERIES_STM32G0X) || defined(CONFIG_SOC_SERIES_STM32C0X)
 	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_DBGMCU);
@@ -80,6 +80,7 @@ static int st_stm32_common_config(void)
 	LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_DBGMCU);
 	LL_DBGMCU_EnableDBGStopMode();
 	LL_APB2_GRP1_DisableClock(LL_APB2_GRP1_PERIPH_DBGMCU);
+#elif defined(CONFIG_SOC_SERIES_STM32MP13X)
 #else /* all other parts */
 	LL_DBGMCU_EnableDBGStopMode();
 #endif
