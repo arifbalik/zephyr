@@ -30,6 +30,15 @@
 		reg = <0xC0000000 DT_SIZE_K(32)>;
 	};
 
+	gic: gic@A0021000 {
+		compatible = "arm,gic-v2", "arm,gic";
+		reg = <0xA0021000 0x1000>,
+			  <0xA0022000 0x2000>;  
+		interrupt-controller;
+		#interrupt-cells = <4>;
+		status = "okay";
+	};
+
 	soc {
 		compatible = "st,stm32mp135", "st,stm32mp1", "simple-bus";
 
@@ -44,5 +53,7 @@
 				set-bit-to-deassert;
 			};
 		};
+
+
 	};
 };

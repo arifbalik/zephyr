@@ -1,0 +1,6 @@
+description: |
+        STM32 controller
+        This compatible stands for the stm32H7RS interrupt-controller block
+        with two dedicated Rising and Falling interrupt pending registers
+        
+compatible: "arm_gic_v2"
