@@ -20,6 +20,7 @@
 
 #include <cmsis_core.h>
 
+
 /**
  * @brief Perform basic hardware initialization at boot.
  *
@@ -32,8 +33,15 @@ static int stm32a7_init(void)
 {
 	/*HW semaphore Clock enable*/
 	/* Update CMSIS SystemCoreClock variable (HCLK) */
-	SystemCoreClock = 209000000;
-
+	SystemCoreClock = 64000000U;
+	__ASM volatile(
+		"MRC     p15, 0, R0, c1, c0, 0                   \n"  /* Read CP15 System Control register */
+		"BIC     R0, R0, #(0x1 << 30)                    \n"   /* Clear TE bit to take exceptions in Thumb mode to fix the DDR init*/
+	    "MCR     p15, 0, R0, c1, c0, 0                   \n"  /* Write value back to CP15 System Control register */
+		"ISB                                             \n"
+		"LDR     R0, =_vector_table                      \n"
+		"MCR     p15, 0, R0, c12, c0, 0                  \n"
+	);
 	return 0;
 }
 static const struct arm_mmu_region mmu_regions[] = {
@@ -43,7 +51,10 @@ static const struct arm_mmu_region mmu_regions[] = {
 	// 		      MT_DEVICE_nGnRnE | MT_P_RW_U_NA | MT_NS),
 
 	MMU_REGION_FLAT_ENTRY("GIC", 0xC0000000, 0x20000000,
-			      MPERM_R | MPERM_W | MPERM_X)
+			      MPERM_R | MPERM_W | MPERM_X),
+
+	MMU_REGION_FLAT_ENTRY("GIC", 0xA0021000, 0x7000,
+			      MPERM_R | MPERM_W | MPERM_X),
 
 	// MMU_REGION_DT_COMPAT_FOREACH_FLAT_ENTRY(nxp_mbox_imx_mu,
 	// 					(MT_DEVICE_nGnRnE | MT_P_RW_U_NA | MT_NS))
