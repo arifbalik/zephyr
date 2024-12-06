@@ -164,11 +164,13 @@ static inline void gpio_stm32_disable_pin_irqs(uint32_t port, gpio_pin_t pin)
 		return;
 	}
 #endif
+#ifndef CONFIG_SOC_SERIES_STM32MP13X
 	stm32_gpio_irq_line_t irq_line = stm32_gpio_intc_get_pin_irq_line(port, pin);
 
 	stm32_gpio_intc_disable_line(irq_line);
 	stm32_gpio_intc_remove_irq_callback(irq_line);
 	stm32_gpio_intc_select_line_trigger(irq_line, STM32_GPIO_IRQ_TRIG_NONE);
+#endif
 }
 
 /**
@@ -293,7 +295,7 @@ static int gpio_stm32_clock_request(const struct device *dev, bool on)
 	int ret;
 
 	__ASSERT_NO_MSG(dev != NULL);
-
+#ifndef CONFIG_SOC_SERIES_STM32MP13X
 	/* enable clock for subsystem */
 	const struct device *const clk = DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE);
 
@@ -304,8 +306,13 @@ static int gpio_stm32_clock_request(const struct device *dev, bool on)
 		ret = clock_control_off(clk,
 					(clock_control_subsys_t)&cfg->pclken);
 	}
-
+	
 	return ret;
+#endif
+#ifdef CONFIG_SOC_SERIES_STM32MP13X
+	return 0;
+#endif
+	
 }
 
 static int gpio_stm32_port_get_raw(const struct device *dev, uint32_t *value)
@@ -519,8 +526,10 @@ static int gpio_stm32_pin_interrupt_configure(const struct device *dev,
 					      enum gpio_int_trig trig)
 {
 	const struct gpio_stm32_config *cfg = dev->config;
+	#ifndef CONFIG_SOC_SERIES_STM32MP13X
 	struct gpio_stm32_data *data = dev->data;
 	const stm32_gpio_irq_line_t irq_line = stm32_gpio_intc_get_pin_irq_line(cfg->port, pin);
+	#endif
 	uint32_t edge = 0;
 	int err = 0;
 
@@ -544,12 +553,12 @@ static int gpio_stm32_pin_interrupt_configure(const struct device *dev,
 		err = -ENOTSUP;
 		goto exit;
 	}
-
+	#ifndef CONFIG_SOC_SERIES_STM32MP13X
 	if (stm32_gpio_intc_set_irq_callback(irq_line, gpio_stm32_isr, data) != 0) {
 		err = -EBUSY;
 		goto exit;
 	}
-
+	#endif
 	switch (trig) {
 	case GPIO_INT_TRIG_LOW:
 		edge = STM32_GPIO_IRQ_TRIG_FALLING;
@@ -568,11 +577,11 @@ static int gpio_stm32_pin_interrupt_configure(const struct device *dev,
 #if defined(CONFIG_EXTI_STM32)
 	stm32_exti_set_line_src_port(pin, cfg->port);
 #endif
-
+#ifndef CONFIG_SOC_SERIES_STM32MP13X
 	stm32_gpio_intc_select_line_trigger(irq_line, edge);
 
 	stm32_gpio_intc_enable_line(irq_line);
-
+#endif
 exit:
 	return err;
 }
@@ -634,10 +643,11 @@ static int gpio_stm32_init(const struct device *dev)
 	int ret;
 
 	data->dev = dev;
-
+	#ifndef CONFIG_SOC_SERIES_STM32MP13X
 	if (!device_is_ready(DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE))) {
 		return -ENODEV;
 	}
+	#endif
 
 #if (defined(PWR_CR2_IOSV) || defined(PWR_SVMCR_IO2SV)) && \
 	DT_NODE_HAS_STATUS(DT_NODELABEL(gpiog), okay)

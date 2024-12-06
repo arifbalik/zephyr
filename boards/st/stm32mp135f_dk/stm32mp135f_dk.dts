@@ -23,8 +23,20 @@
 		zephyr,flash = &retram;
 		zephyr,sram = &mcusram;
 	};
+
+	leds {
+		compatible = "gpio-leds";
+		red_led_1: led_1 {
+			gpios = <&gpioa 13 GPIO_ACTIVE_HIGH>;
+			label = "LD4";
+		};
+	};
+
+	aliases {
+		led0 = &red_led_1;
+	};
 };
 
 &rcc {
-	clock-frequency = <DT_FREQ_M(209)>;
+	clock-frequency = <DT_FREQ_M(64)>;
 };

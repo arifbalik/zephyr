@@ -50,18 +50,18 @@ static const struct arm_mmu_region mmu_regions[] = {
 	// 		      DT_REG_SIZE_BY_IDX(DT_NODELABEL(gic), 0),
 	// 		      MT_DEVICE_nGnRnE | MT_P_RW_U_NA | MT_NS),
 
-	MMU_REGION_FLAT_ENTRY("GIC", 0xC0000000, 0x20000000,
-			      MPERM_R | MPERM_W | MPERM_X),
+	MMU_REGION_FLAT_ENTRY("EXEC", 0xC0000000, 0x20000000,
+			    	MPERM_R | MPERM_W | MPERM_X),
 
 	MMU_REGION_FLAT_ENTRY("GIC", 0xA0021000, 0x7000,
-			      MPERM_R | MPERM_W | MPERM_X),
+			    	MPERM_R | MPERM_W | MPERM_X),
 
-	// MMU_REGION_DT_COMPAT_FOREACH_FLAT_ENTRY(nxp_mbox_imx_mu,
-	// 					(MT_DEVICE_nGnRnE | MT_P_RW_U_NA | MT_NS))
+	MMU_REGION_FLAT_ENTRY("STGEN", 0x5C008000, 0x1000,
+					MPERM_R | MPERM_W | MPERM_X),
 
-	// 	MMU_REGION_DT_COMPAT_FOREACH_FLAT_ENTRY(nxp_kinetis_lpuart,
-	// 						(MT_DEVICE_nGnRnE | MT_P_RW_U_NA | MT_NS))
-
+	MMU_REGION_FLAT_ENTRY("GPIOA", 0x50002000, 0x1000,
+					MPERM_R | MPERM_W | MPERM_X | MT_DEVICE),
+	//MMU_REGION_FLAT_ENTRY("RCC", 0x50000000, 0x1000, MPERM_R | MPERM_W | MPERM_X),
 };
 
 const struct arm_mmu_config mmu_config = {
