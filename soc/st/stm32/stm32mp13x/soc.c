@@ -20,6 +20,7 @@
 
 #include <cmsis_core.h>
 
+#include "stm32mp13xx_hal.h"
 
 /**
  * @brief Perform basic hardware initialization at boot.
@@ -29,15 +30,16 @@
  *
  * @return 0
  */
+
 static int stm32a7_init(void)
 {
 	/*HW semaphore Clock enable*/
 	/* Update CMSIS SystemCoreClock variable (HCLK) */
-	SystemCoreClock = 64000000U;
+	SystemCoreClock = 1000000000U;
 	__ASM volatile(
-		"MRC     p15, 0, R0, c1, c0, 0                   \n"  /* Read CP15 System Control register */
-		"BIC     R0, R0, #(0x1 << 30)                    \n"   /* Clear TE bit to take exceptions in Thumb mode to fix the DDR init*/
-	    "MCR     p15, 0, R0, c1, c0, 0                   \n"  /* Write value back to CP15 System Control register */
+		"MRC     p15, 0, R0, c1, c0, 0                   \n" /* Read CP15 System Control register */
+		"BIC     R0, R0, #(0x1 << 30)                    \n" /* Clear TE bit to take exceptions in Thumb mode to fix the DDR init*/
+	    	"MCR     p15, 0, R0, c1, c0, 0                   \n" /* Write value back to CP15 System Control register */
 		"ISB                                             \n"
 		"LDR     R0, =_vector_table                      \n"
 		"MCR     p15, 0, R0, c12, c0, 0                  \n"

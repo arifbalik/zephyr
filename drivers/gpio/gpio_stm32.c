@@ -306,13 +306,11 @@ static int gpio_stm32_clock_request(const struct device *dev, bool on)
 		ret = clock_control_off(clk,
 					(clock_control_subsys_t)&cfg->pclken);
 	}
-	
+#else
+	ret = 0;
+#endif
+
 	return ret;
-#endif
-#ifdef CONFIG_SOC_SERIES_STM32MP13X
-	return 0;
-#endif
-	
 }
 
 static int gpio_stm32_port_get_raw(const struct device *dev, uint32_t *value)

@@ -6,6 +6,6 @@
 if SOC_STM32MP13_A7
 
 config NUM_IRQS
-	default 150
+	default 181
 
 endif # SOC_STM32MP13_A7

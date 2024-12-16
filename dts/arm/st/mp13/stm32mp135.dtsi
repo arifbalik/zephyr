@@ -1,13 +1,12 @@
 /*
- * Copyright (c) 2019 STMicroelectronics
- * Copyright (c) 2019 Centaur Analytics, Inc
+ * Copyright (c) 2024 STMicroelectronics
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <mem.h>
 #include <freq.h>
-#include <arm64/armv8-r.dtsi>
+#include <arm/armv8-r.dtsi>
 #include <zephyr/dt-bindings/interrupt-controller/arm-gic.h>
 #include <zephyr/dt-bindings/gpio/gpio.h>
 #include <zephyr/dt-bindings/clock/stm32_clock.h>
@@ -23,7 +22,7 @@
 			reg = <0>;
 		};
 	};
-	
+
 	timer: tim@5C008000{
 		compatible = "arm,armv8-timer";
 		reg = <0x5C008000 0x1000>; 
@@ -51,7 +50,7 @@
 	gic: gic@A0021000 {
 		compatible = "arm,gic-v2", "arm,gic";
 		reg = <0xA0021000 0x1000>,
-			  <0xA0022000 0x2000>;  
+			  <0xA0022000 0x2000>;
 		interrupt-controller;
 		#interrupt-cells = <4>;
 		status = "okay";
