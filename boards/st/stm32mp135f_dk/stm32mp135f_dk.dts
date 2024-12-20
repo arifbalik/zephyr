@@ -11,8 +11,8 @@
 	model = "STMicroelectronics STM32MP135-DK board";
 	compatible = "st,stm32mp135f-dk";
 	chosen {
-		zephyr,flash = &retram;
-		zephyr,sram = &mcusram;
+		zephyr,flash = &ddr_code;
+		zephyr,sram = &ddr_data;
 	};
 
 	leds {
