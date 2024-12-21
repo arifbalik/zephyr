@@ -6,6 +6,7 @@
 
 /dts-v1/;
 #include <st/mp13/stm32mp135.dtsi>
+#include <zephyr/dt-bindings/pinctrl/stm32-pinctrl.h>
 
 / {
 	model = "STMicroelectronics STM32MP135-DK board";
@@ -13,6 +14,8 @@
 	chosen {
 		zephyr,flash = &ddr_code;
 		zephyr,sram = &ddr_data;
+		zephyr,console = &uart4;
+		zephyr,shell-uart = &uart4;
 	};
 
 	leds {
@@ -35,4 +38,27 @@
 
 &rcc {
 	clock-frequency = <DT_FREQ_M(64)>;
+	clocks = <&clk_hsi>;
+	ahb-prescaler = <1>;
+	apb1-prescaler = <1>;
+	apb2-prescaler = <1>;
+};
+
+&uart4 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins1 &pins2>;
+	current-speed = <115200>;
+	status = "okay";
+};
+
+&pinctrl {
+		pins1: pins1 {
+			pinmux = <STM32_PINMUX('D', 6, AF8)>; /* UART4_TX */
+			bias-disable;
+			drive-push-pull;
+		};
+		pins2: pins2 {
+			pinmux = <STM32_PINMUX('D', 8, AF8)>; /* UART4_RX */
+			bias-disable;
+		};
 };
