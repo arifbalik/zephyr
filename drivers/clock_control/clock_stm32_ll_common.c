@@ -892,6 +892,9 @@ int stm32_clock_control_init(const struct device *dev)
 #if DT_NODE_HAS_PROP(DT_NODELABEL(rcc), adc34_prescaler)
 	LL_RCC_SetADCClockSource(adc34_prescaler(STM32_ADC34_PRESCALER));
 #endif
+#if DT_NODE_HAS_PROP(DT_NODELABEL(rcc), ahb6_prescaler)
+	LL_RCC_SetAHB6Prescaler(ahb_prescaler(STM32_AHB6_PRESCALER));
+#endif
 
 	return 0;
 }

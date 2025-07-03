@@ -33,6 +33,7 @@ LOG_MODULE_REGISTER(LOG_MODULE_NAME);
 #include <zephyr/irq.h>
 #include <zephyr/net/lldp.h>
 #include <zephyr/drivers/hwinfo.h>
+#include <zephyr/drivers/gpio.h>
 
 #if defined(CONFIG_NET_DSA_DEPRECATED)
 #include <zephyr/net/dsa.h>
@@ -155,7 +156,10 @@ static struct eth_stm32_rx_buffer_header dma_rx_buffer_header[ETH_RXBUFNB];
 static struct eth_stm32_tx_buffer_header dma_tx_buffer_header[ETH_TXBUFNB];
 static struct eth_stm32_tx_context dma_tx_context[ETH_TX_DESC_CNT];
 
-void HAL_ETH_RxAllocateCallback(uint8_t **buf)
+#define ZEPHYR_USER_NODE DT_PATH(zephyr_user)
+static const struct gpio_dt_spec phyrst = GPIO_DT_SPEC_GET(ZEPHYR_USER_NODE, signal_gpios);
+
+void HAL_ETH_RxAllocateCallback(ETH_HandleTypeDef *heth, uint8_t **buf)
 {
 	for (size_t i = 0; i < ETH_RXBUFNB; ++i) {
 		if (!dma_rx_buffer_header[i].used) {
@@ -173,7 +177,7 @@ void HAL_ETH_RxAllocateCallback(uint8_t **buf)
 typedef uint8_t (*RxBufferPtr)[ETH_STM32_RX_BUF_SIZE];
 
 /* called by HAL_ETH_ReadData() */
-void HAL_ETH_RxLinkCallback(void **pStart, void **pEnd, uint8_t *buff, uint16_t Length)
+void HAL_ETH_RxLinkCallback(ETH_HandleTypeDef *heth, void **pStart, void **pEnd, uint8_t *buff, uint16_t Length)
 {
 	/* buff points to the begin on one of the rx buffers,
 	 * so we can compute the index of the given buffer
@@ -198,7 +202,7 @@ void HAL_ETH_RxLinkCallback(void **pStart, void **pEnd, uint8_t *buff, uint16_t 
 }
 
 /* Called by HAL_ETH_ReleaseTxPacket */
-void HAL_ETH_TxFreeCallback(uint32_t *buff)
+void HAL_ETH_TxFreeCallback(ETH_HandleTypeDef *heth, uint32_t *buff)
 {
 	__ASSERT_NO_MSG(buff != NULL);
 
@@ -251,7 +255,7 @@ static inline struct eth_stm32_tx_context *allocate_tx_context(struct net_pkt *p
 #endif /* CONFIG_ETH_STM32_HAL_API_V2 */
 
 #if defined(CONFIG_ETH_STM32_HAL_API_V2)
-static ETH_TxPacketConfig tx_config;
+static ETH_TxPacketConfigTypeDef tx_config;
 #endif
 
 static inline void setup_mac_filter(ETH_HandleTypeDef *heth)
@@ -498,7 +502,7 @@ error:
 		HAL_ETH_ReleaseTxPacket(heth);
 	} else {
 		/* We need to release the tx context and its buffers */
-		HAL_ETH_TxFreeCallback((uint32_t *)ctx);
+		HAL_ETH_TxFreeCallback(heth, (uint32_t *)ctx);
 	}
 #endif /* CONFIG_ETH_STM32_HAL_API_V2 */
 
@@ -717,7 +721,7 @@ void HAL_ETH_ErrorCallback(ETH_HandleTypeDef *heth)
 		CONTAINER_OF(heth, struct eth_stm32_hal_dev_data, heth);
 
 	switch (error_code) {
-#if DT_HAS_COMPAT_STATUS_OKAY(st_stm32n6_ethernet)
+#if DT_HAS_COMPAT_STATUS_OKAY(st_stm32n6_ethernet) || DT_HAS_COMPAT_STATUS_OKAY(st_stm32mp13_ethernet)
 	case HAL_ETH_ERROR_DMA_CH0:
 	case HAL_ETH_ERROR_DMA_CH1:
 #else
@@ -869,6 +873,10 @@ static int eth_initialize(const struct device *dev)
 		(clock_control_subsys_t)&cfg->pclken_tx);
 	ret |= clock_control_on(DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE),
 		(clock_control_subsys_t)&cfg->pclken_rx);
+#if defined(CONFIG_SOC_SERIES_STM32MP13X)
+	ret |= clock_control_on(DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE),
+		(clock_control_subsys_t)&cfg->pclken_mac);
+#endif
 #if DT_INST_CLOCKS_HAS_NAME(0, mac_clk_ptp)
 	ret |= clock_control_on(DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE),
 		(clock_control_subsys_t)&cfg->pclken_ptp);
@@ -1000,6 +1008,27 @@ static int eth_init_api_v2(const struct device *dev)
 #endif
 	heth->Init.RxBuffLen = ETH_STM32_RX_BUF_SIZE;
 
+	if (!gpio_is_ready_dt(&phyrst)) {
+		LOG_ERR("PHY reset GPIO not ready");
+		return -ENODEV;
+	}
+
+	/* Reset PHY */
+
+	if (gpio_pin_configure_dt(&phyrst, GPIO_OUTPUT_ACTIVE) < 0) {
+		LOG_ERR("PHY reset GPIO configuration failed");
+		return -EIO;
+	}
+
+	k_sleep(K_MSEC(1000));
+
+	if (gpio_pin_set_dt(&phyrst, 0) < 0) {
+		LOG_ERR("PHY reset GPIO set failed");
+		return -EIO;
+	}
+
+	k_sleep(K_MSEC(1000));
+
 	hal_ret = HAL_ETH_Init(heth);
 	if (hal_ret == HAL_TIMEOUT) {
 		/* HAL Init time out. This could be linked to */
@@ -1007,7 +1036,7 @@ static int eth_init_api_v2(const struct device *dev)
 		/* driver initialisation */
 		LOG_ERR("HAL_ETH_Init Timed out");
 	} else if (hal_ret != HAL_OK) {
-		LOG_ERR("HAL_ETH_Init failed: %d", hal_ret);
+		LOG_ERR("HAL_ETH_Init failed: %d, heth: %p, hal_ErrorCode %d, hal_gSatte %d", hal_ret, heth->Instance, heth->ErrorCode, heth->gState);
 		return -EINVAL;
 	}
 
@@ -1028,7 +1057,7 @@ static int eth_init_api_v2(const struct device *dev)
 	k_sem_init(&dev_data->tx_int_sem, 0, K_SEM_MAX_LIMIT);
 
 	/* Tx config init: */
-	memset(&tx_config, 0, sizeof(ETH_TxPacketConfig));
+	memset(&tx_config, 0, sizeof(ETH_TxPacketConfigTypeDef));
 	tx_config.Attributes = ETH_TX_PACKETS_FEATURES_CSUM |
 				ETH_TX_PACKETS_FEATURES_CRCPAD;
 	tx_config.ChecksumCtrl = IS_ENABLED(CONFIG_ETH_STM32_HW_CHECKSUM) ?
@@ -1339,6 +1368,10 @@ static const struct eth_stm32_hal_dev_cfg eth0_config = {
 	.config_func = eth0_irq_config,
 	.pclken = {.bus = DT_CLOCKS_CELL_BY_NAME(DT_INST_PARENT(0), stm_eth, bus),
 		   .enr = DT_CLOCKS_CELL_BY_NAME(DT_INST_PARENT(0), stm_eth, bits)},
+#if defined(CONFIG_SOC_SERIES_STM32MP13X)
+	.pclken_mac = {.bus = DT_INST_CLOCKS_CELL_BY_NAME(0, mac_clk_en, bus),
+		      .enr = DT_INST_CLOCKS_CELL_BY_NAME(0, mac_clk_en, bits)},	
+#endif
 	.pclken_tx = {.bus = DT_INST_CLOCKS_CELL_BY_NAME(0, mac_clk_tx, bus),
 		      .enr = DT_INST_CLOCKS_CELL_BY_NAME(0, mac_clk_tx, bits)},
 	.pclken_rx = {.bus = DT_INST_CLOCKS_CELL_BY_NAME(0, mac_clk_rx, bus),

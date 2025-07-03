@@ -23,6 +23,10 @@
 		zephyr,display = &ltdc;
 	};
 
+	zephyr,user {
+		signal-gpios = <&mcp23017 10 GPIO_ACTIVE_HIGH>;
+	};
+
 	gpio_keys {
 		compatible = "gpio-keys";
 
@@ -89,12 +93,24 @@
 	status = "okay";
 };
 
+&pll4 {
+	clocks = <&clk_hsi>;
+	div-m = <2>;
+	mul-n = <50>;
+	div-p = <12>;
+	div-q = <60>;
+	div-r = <6>;
+	fracn = <0>;
+	status = "okay";
+};
+
 &rcc {
 	clock-frequency = <DT_FREQ_M(1000)>;
-	clocks = <&pll>;
-	ahb-prescaler = <1>;
-	apb1-prescaler = <1>;
-	apb2-prescaler = <1>;
+	clocks = <&pll &pll4>;
+	//ahb-prescaler = <1>;
+	//apb1-prescaler = <1>;
+	//apb2-prescaler = <1>;
+	ahb6-prescaler = <1>;
 };
 
 &uart4 {
@@ -165,4 +181,43 @@
 	def-back-color-red = <0xFF>;
 	def-back-color-green = <0xFF>;
 	def-back-color-blue = <0xFF>;
+};
+
+&mac {
+	status = "okay";
+	pinctrl-0 = <&eth1_txd0_pg13
+		     &eth1_txd1_pg14
+		     &eth1_tx_ctl_pb11
+		     &eth1_ref_clk_pa1
+		     &eth1_rxd0_pc4
+		     &eth1_rxd1_pc5
+		     &eth1_crs_dv_pc1>;
+	pinctrl-names = "default";
+	phy-connection-type = "rmii";
+	phy-handle = <&eth_phy>;
+};
+
+&mdio {
+	status = "okay";
+	pinctrl-0 = <&eth1_mdio_pa2 &eth1_mdc_pg2>;
+	pinctrl-names = "default";
+
+	eth_phy: ethernet-phy@1 {
+		//compatible = "microchip,lan8742";
+		compatible = "ethernet-phy";
+		reg = <0>;
+		/**
+		 * PD3 can be used as alternate function ETH1_PHY_INTN,
+		 * which allows the Ethernet MAC to sense interrupts from
+		 * the PHY in order to signal them to the CPU via its own
+		 * interrupt lines. However, the Zephyr RTL8211F driver
+		 * is unaware of this mechanism. Skip configuring PD3 as
+		 * alternate function (in pinctrl of &mac) and provide the
+		 * pin to the RTL8211F driver for interrupt sensing using
+		 * the regular GPIO interrupt APIs.
+		 */
+		//int-gpios = <&gpiog 12 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+
+		//reset-gpios = <&mcp23017 9 GPIO_ACTIVE_LOW>;
+	};
 };

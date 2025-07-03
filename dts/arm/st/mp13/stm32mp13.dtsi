@@ -57,7 +57,7 @@
 		};
 
 		rcc: rcc@50000000 {
-			compatible = "st,stm32-rcc";
+			compatible = "st,stm32mp1-rcc";
 			reg = <0x50000000 0x1000>;
 			#clock-cells = <2>;
 
@@ -243,6 +243,33 @@
 				     <GIC_SPI 115 IRQ_TYPE_LEVEL IRQ_DEFAULT_PRIORITY>;
 			interrupt-names = "event", "error";
 			status = "disabled";
+		};
+
+		eth0: ethernet@5800a000 {
+			reg = <0x5800a000 0x2000>;
+			compatible = "st,stm32-ethernet-controller";
+			clock-names = "stm-eth";
+			clocks = <&rcc STM32_CLOCK(AHB6, 7)>;
+
+			mac: ethernet {
+				compatible = "st,stm32mp13-ethernet", "st,stm32h7-ethernet",
+					"st,stm32-ethernet";
+				interrupts = <GIC_SPI 62 IRQ_TYPE_LEVEL IRQ_DEFAULT_PRIORITY>,
+						    <GIC_SPI 63 IRQ_TYPE_LEVEL IRQ_DEFAULT_PRIORITY>;
+				clock-names = "mac-clk-en", "mac-clk-tx", "mac-clk-rx";
+				clocks = <&rcc STM32_CLOCK(AHB6, 8)>,
+					 <&rcc STM32_CLOCK(AHB6, 9)>,
+					 <&rcc STM32_CLOCK(AHB6, 10)>;
+				resets = <&rctl STM32_RESET(AHB6, 10)>;
+				status = "disabled";
+			};
+
+			mdio: mdio {
+				compatible = "st,stm32-mdio";
+				#address-cells = <1>;
+				#size-cells = <0>;
+				status = "disabled";
+			};
 		};
 	};
 

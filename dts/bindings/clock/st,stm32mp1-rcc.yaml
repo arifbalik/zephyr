@@ -17,3 +17,22 @@ include:
       - apb1-prescaler
       - apb2-prescaler
       - undershoot-prevention
+
+properties:
+  ahb6-prescaler:
+    type: int
+    default: 1
+    enum:
+      - 1
+      - 2
+      - 4
+      - 8
+      - 16
+      - 64
+      - 128
+      - 256
+      - 512
+    description: |
+        AHB6 prescaler. Defines actual core clock frequency (HCLK6)
+        based on system frequency input.
+        The HCLK6 clocks AHB6 bus.

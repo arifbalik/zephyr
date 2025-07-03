@@ -33,6 +33,9 @@
 struct eth_stm32_hal_dev_cfg {
 	void (*config_func)(void);
 	struct stm32_pclken pclken;
+#if defined(CONFIG_SOC_SERIES_STM32MP13X)
+	struct stm32_pclken pclken_mac;
+#endif /* CONFIG_SOC_SERIES_STM32MP13X */
 	struct stm32_pclken pclken_rx;
 	struct stm32_pclken pclken_tx;
 #if DT_INST_CLOCKS_HAS_NAME(0, mac_clk_ptp)

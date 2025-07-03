@@ -78,6 +78,7 @@
 #define STM32_APB3_PRESCALER	DT_PROP(DT_NODELABEL(rcc), apb3_prescaler)
 #define STM32_APB4_PRESCALER	DT_PROP(DT_NODELABEL(rcc), apb4_prescaler)
 #define STM32_APB5_PRESCALER	DT_PROP(DT_NODELABEL(rcc), apb5_prescaler)
+#define STM32_APB6_PRESCALER	DT_PROP_OR(DT_NODELABEL(rcc), apb6_prescaler)
 #define STM32_APB7_PRESCALER	DT_PROP(DT_NODELABEL(rcc), apb7_prescaler)
 #define STM32_AHB3_PRESCALER	DT_PROP(DT_NODELABEL(rcc), ahb3_prescaler)
 #define STM32_AHB4_PRESCALER	DT_PROP(DT_NODELABEL(rcc), ahb4_prescaler)
