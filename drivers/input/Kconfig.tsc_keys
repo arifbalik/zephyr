@@ -2,19 +2,21 @@
 # SPDX-License-Identifier: Apache-2.0
 
 config INPUT_STM32_TSC_KEYS
-	bool "STM32 TSC touch library"
+	bool "STM32 touch keys (TSC)"
 	default y
 	depends on DT_HAS_ST_STM32_TSC_ENABLED
 	help
-	  Enable support for STM32 TSC touch library.
+	  Touch keys on the STM32 Touch Sensing Controller (TSC).
 
 config INPUT_STM32_TSC_KEYS_BUFFER_WORD_SIZE
-	int "STM32 TSC touch buffer size in words"
+	int "Samples kept per touch key"
 	default 10
+	range 1 256
 	depends on INPUT_STM32_TSC_KEYS
 	help
-	  Size of the ring buffer for the STM32 TSC touch library. The size of this
-	  buffer together with the sampling-interval property in the tsc-keys
-	  device tree node determines the time window of interest. A slope value is
-	  calculated between the oldest and the newest value in the buffer to
-	  generate a press or release input event.
+	  Number of samples the driver keeps for each key. A key is pressed
+	  when the newest sample is lower than the oldest one by more than
+	  the noise-threshold of the key.
+
+	  The samples span this value times sampling-interval-ms, 100 ms
+	  with the defaults. A touch has to arrive within that time.

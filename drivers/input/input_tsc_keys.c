@@ -24,7 +24,7 @@ LOG_MODULE_REGISTER(tsc_keys, CONFIG_INPUT_LOG_LEVEL);
 #define DT_DRV_COMPAT st_stm32_tsc
 
 /* each group only has 4 configurable I/O */
-#define GET_GROUP_BITS(val, group) (uint32_t)(((val) & 0x0f) << ((group - 1) * 4))
+#define GET_GROUP_BITS(val, group) (((uint32_t)(val) & 0x0fU) << (((group) - 1U) * 4U))
 
 struct stm32_tsc_group_config {
 	uint8_t group;
@@ -122,7 +122,6 @@ static int stm32_tsc_handle_incoming_data(const struct device *dev)
 		sys_set_bit((mem_addr_t)&config->tsc->ICR, TSC_ICR_MCEIC_Pos);
 		LOG_ERR("%s: max count error", dev->name);
 		LOG_HEXDUMP_DBG(config->tsc, sizeof(TSC_TypeDef), "TSC Registers");
-		return -EIO;
 	}
 
 	if (sys_test_bit((mem_addr_t)&config->tsc->ISR, TSC_ISR_EOAF_Pos)) {
@@ -205,7 +204,7 @@ static int stm32_tsc_init(const struct device *dev)
 							   << TSC_CR_CTPL_Pos);
 
 	/* set spread spectrum deviation (bits 23:17) */
-	sys_set_bits((mem_addr_t)&config->tsc->CR, config->ssd << TSC_CR_SSD_Pos);
+	sys_set_bits((mem_addr_t)&config->tsc->CR, (config->ssd - 1U) << TSC_CR_SSD_Pos);
 
 	/* set pulse generator prescaler (bits 14:12) */
 	sys_set_bits((mem_addr_t)&config->tsc->CR, config->pgpsc << TSC_CR_PGPSC_Pos);
@@ -347,12 +346,14 @@ struct input_tsc_keys_data {
 	uint8_t buffer[CONFIG_INPUT_STM32_TSC_KEYS_BUFFER_WORD_SIZE * sizeof(uint32_t)];
 	struct sys_ringq fifo;
 	bool expect_release;
+	k_timepoint_t sticky_timeout;
 	struct k_timer sampling_timer;
 };
 
 struct input_tsc_keys_config {
 	const struct device *tsc_dev;
 	uint32_t sampling_interval_ms;
+	uint32_t sticky_key_timeout_ms;
 	int32_t noise_threshold;
 	int zephyr_code;
 	uint8_t group;
@@ -380,10 +381,13 @@ static void input_tsc_callback_handler(uint32_t count_value, void *user_data)
 		slope = count_value - oldest_point;
 		if (slope < -config->noise_threshold && !data->expect_release) {
 			data->expect_release = true;
-			input_report_key(dev, config->zephyr_code, 1, false, K_NO_WAIT);
-		} else if (slope > config->noise_threshold && data->expect_release) {
+			data->sticky_timeout =
+				sys_timepoint_calc(K_MSEC(config->sticky_key_timeout_ms));
+			input_report_key(dev, config->zephyr_code, 1, true, K_NO_WAIT);
+		} else if (data->expect_release && (slope > config->noise_threshold ||
+						    sys_timepoint_expired(data->sticky_timeout))) {
 			data->expect_release = false;
-			input_report_key(dev, config->zephyr_code, 0, false, K_NO_WAIT);
+			input_report_key(dev, config->zephyr_code, 0, true, K_NO_WAIT);
 		}
 	}
 	sys_ringq_put(&data->fifo, &count_value);
@@ -433,6 +437,7 @@ static int input_tsc_keys_init(const struct device *dev)
 	static const struct input_tsc_keys_config tsc_keys_config_##inst = {                       \
 		.tsc_dev = DEVICE_DT_GET(DT_GPARENT(inst)),                                        \
 		.sampling_interval_ms = DT_PROP(inst, sampling_interval_ms),                       \
+		.sticky_key_timeout_ms = DT_PROP(inst, sticky_key_timeout_ms),                     \
 		.zephyr_code = DT_PROP(inst, zephyr_code),                                         \
 		.noise_threshold = DT_PROP(inst, noise_threshold),                                 \
 		.group = DT_PROP(DT_PARENT(inst), group),                                          \

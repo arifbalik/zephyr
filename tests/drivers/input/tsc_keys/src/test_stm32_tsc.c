@@ -79,8 +79,8 @@ ZTEST(stm32_tsc, test_2_cr_reg)
 		      (uint32_t)(*tsc_cr & TSC_CR_CTPL_Msk) >> TSC_CR_CTPL_Pos);
 
 	/* check spread spectrum deviation value (bits 23:17) */
-	zassert_equal((*tsc_cr & TSC_CR_SSD_Msk) >> TSC_CR_SSD_Pos, ssd,
-		      "SSD value is not correct, expected %d, got %d", ssd,
+	zassert_equal((*tsc_cr & TSC_CR_SSD_Msk) >> TSC_CR_SSD_Pos, ssd - 1,
+		      "SSD value is not correct, expected %d, got %d", ssd - 1,
 		      (uint32_t)(*tsc_cr & TSC_CR_SSD_Msk) >> TSC_CR_SSD_Pos);
 
 	/* check spread spectrum enable bit (bit 16) */
@@ -140,7 +140,7 @@ ZTEST(stm32_tsc, test_3_group_registers)
 	volatile const uint32_t *tsc_ioccr = &tsc->IOCCR;
 	volatile const uint32_t *tsc_iogcsr = &tsc->IOGCSR;
 
-#define GET_GROUP_BITS(val) (uint32_t)(((val) & 0x0f) << ((group - 1) * 4))
+#define GET_GROUP_BITS(val) (((uint32_t)(val) & 0x0fU) << (((group) - 1U) * 4U))
 
 #define STM32_TSC_GROUP_TEST(node)                                                                 \
 	do {                                                                                       \
