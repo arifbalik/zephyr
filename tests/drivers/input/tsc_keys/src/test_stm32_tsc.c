@@ -8,21 +8,23 @@
  * @brief Verify STM32 TSC peripheral is configured properly and can be started
  *
  * @details
- * This test requires an external connection on the stm32u083c_dk board. The
- * pin GPIOA 10 should be connected to GPIOD 2 manually so that sync signal can
- * be generated. Also make sure to press TS1 pad on the board in order to
- * generate touch signal on test 5.
+ * This test needs no external wiring and no touch. Synchronized acquisition
+ * is enabled and the SYNC pin has no external connection, so its level is set
+ * by its internal pull resistor: pulled low no acquisition runs, pulled high
+ * acquisitions run. The zephyr,user node holds the two pin configurations.
  * - Test Steps
- *   -# Get a TSC device
- *   -# Verify the device is ready
- *   -# Verify MIMO region with device tree values
- *   -# Test the acquisition in polling mode
- *   -# Test the acquisition in interrupt mode
+ *   -# Get the TSC device and verify it is ready
+ *   -# Verify the control register against the devicetree values
+ *   -# Verify the I/O and group registers against the devicetree values
+ *   -# With SYNC pulled low, read the counters of all enabled groups, then
+ *      pull SYNC high and wait for the acquisition
  * - Expected Results
  *   -# The device is ready
- *   -# The device tree values are correctly mapped to the TSC registers
- *   -# The acquisition is successful in polling mode
- *   -# The acquisition is successful in interrupt mode
+ *   -# The control register matches the devicetree values
+ *   -# The I/O and group registers match the devicetree values
+ *   -# While SYNC is low, no max count error is flagged and the counters are
+ *      0; within 1 s after it goes high, the counters of all enabled groups
+ *      are non-zero
  *
  */
 
@@ -32,8 +34,7 @@
 #include <zephyr/ztest.h>
 #include <zephyr/device.h>
 #include <zephyr/kernel.h>
-#include <zephyr/input/input.h>
-#include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/pinctrl.h>
 
 #if DT_HAS_COMPAT_STATUS_OKAY(st_stm32_tsc)
 #define TSC_NODE DT_INST(0, st_stm32_tsc)
@@ -43,7 +44,12 @@
 
 #define ZEPHYR_USER_NODE DT_PATH(zephyr_user)
 
-const struct gpio_dt_spec signal_mock = GPIO_DT_SPEC_GET(ZEPHYR_USER_NODE, signal_gpios);
+/* SYNC pin pulled high, the default state pulls it low */
+#define PINCTRL_STATE_SYNC_HIGH PINCTRL_STATE_PRIV_START
+
+PINCTRL_DT_DEFINE(ZEPHYR_USER_NODE);
+
+ZTEST_SUITE(stm32_tsc, NULL, NULL, NULL, NULL, NULL);
 
 ZTEST(stm32_tsc, test_1_device_ready)
 {
@@ -69,9 +75,9 @@ ZTEST(stm32_tsc, test_2_cr_reg)
 	const bool sync_acq = DT_PROP(TSC_NODE, st_synced_acquisition);
 
 	/* check charge transfer pulse high value (bits 31:28) */
-	zassert_equal((*tsc_cr & TSC_CR_CTPL_Msk) >> TSC_CR_CTPL_Pos, ctph - 1,
+	zassert_equal((*tsc_cr & TSC_CR_CTPH_Msk) >> TSC_CR_CTPH_Pos, ctph - 1,
 		      "CTPH value is not correct, expected %d, got %d", ctph - 1,
-		      (uint32_t)(*tsc_cr & TSC_CR_CTPL_Msk) >> TSC_CR_CTPL_Pos);
+		      (uint32_t)(*tsc_cr & TSC_CR_CTPH_Msk) >> TSC_CR_CTPH_Pos);
 
 	/* check charge transfer pulse low value (bits 27:24) */
 	zassert_equal((*tsc_cr & TSC_CR_CTPL_Msk) >> TSC_CR_CTPL_Pos, ctpl - 1,
@@ -182,19 +188,28 @@ ZTEST(stm32_tsc, test_3_group_registers)
 	DT_FOREACH_CHILD_STATUS_OKAY(TSC_NODE, GROUP_TEST_RUN);
 }
 
-static volatile bool tsc_input_received;
+/* group numbers of the groups enabled for acquisition (not used as shield) */
+#define TSC_ENABLED_GROUP(node)                                                                    \
+	COND_CODE_1(DT_PROP(node, st_use_as_shield), (), (DT_PROP(node, group),))
 
-static void tsc_input_callback(struct input_event *evt, void *user_data)
+static const uint8_t enabled_groups[] = {
+	DT_FOREACH_CHILD_STATUS_OKAY(TSC_NODE, TSC_ENABLED_GROUP)
+};
+
+static bool all_group_counters_nonzero(TSC_TypeDef *tsc)
 {
-	ARG_UNUSED(evt);
-	ARG_UNUSED(user_data);
+	for (size_t i = 0; i < ARRAY_SIZE(enabled_groups); i++) {
+		if (tsc->IOGXCR[enabled_groups[i] - 1] == 0U) {
+			return false;
+		}
+	}
 
-	tsc_input_received = true;
+	return true;
 }
-INPUT_CALLBACK_DEFINE(NULL, tsc_input_callback, NULL);
 
 ZTEST(stm32_tsc, test_5_acquisition_interrupt)
 {
+	const struct pinctrl_dev_config *sync_pcfg = PINCTRL_DT_DEV_CONFIG_GET(ZEPHYR_USER_NODE);
 	TSC_TypeDef *tsc = (TSC_TypeDef *)DT_REG_ADDR(TSC_NODE);
 	volatile const uint32_t *tsc_isr = &tsc->ISR;
 
@@ -203,14 +218,17 @@ ZTEST(stm32_tsc, test_5_acquisition_interrupt)
 	/* test ISR register max count error flag */
 	zexpect_false((*tsc_isr & TSC_ISR_MCEF_Msk) >> TSC_ISR_MCEF_Pos);
 
-	/* this should fail because of the sync pin */
-	zexpect_false(tsc_input_received);
+	/* no acquisition can run without the sync signal */
+	for (size_t i = 0; i < ARRAY_SIZE(enabled_groups); i++) {
+		zexpect_equal(tsc->IOGXCR[enabled_groups[i] - 1], 0U,
+			      "Group %d counter is not 0 before the sync signal",
+			      enabled_groups[i]);
+	}
 
-	zexpect_ok(gpio_pin_toggle_dt(&signal_mock));
+	zassert_ok(pinctrl_apply_state(sync_pcfg, PINCTRL_STATE_SYNC_HIGH));
 
-	/* press the TS1 pad */
+	zexpect_true(WAIT_FOR(all_group_counters_nonzero(tsc), USEC_PER_SEC, k_msleep(1)),
+		     "Not all enabled group counters are non-zero after the sync signal");
 
-	k_sleep(K_MSEC(3000));
-
-	zexpect_true(tsc_input_received);
+	zexpect_ok(pinctrl_apply_state(sync_pcfg, PINCTRL_STATE_DEFAULT));
 }

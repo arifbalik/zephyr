@@ -5,10 +5,19 @@
 
 / {
 	zephyr,user {
-		/* This will be used to trigger the SYNC pin high and low programmatically.
-		 * They have to be connected.
+		/* The test switches the SYNC pin between these two states: pulled low
+		 * keeps the synchronized acquisition waiting, pulled high lets it run.
 		 */
-		signal-gpios = <&gpioa 10 GPIO_ACTIVE_HIGH>;
+		pinctrl-0 = <&tsc_sync_pd2>;
+		pinctrl-1 = <&tsc_sync_high_pd2>;
+		pinctrl-names = "default", "sync_high";
+	};
+};
+
+&pinctrl {
+	tsc_sync_high_pd2: tsc_sync_high_pd2 {
+		pinmux = <STM32_PINMUX('D', 2, AF9)>;
+		bias-pull-up;
 	};
 };
 
@@ -29,4 +38,9 @@
 	st,synced-acquisition;
 	st,syncpol-rising;
 	status = "okay";
+};
+
+/* A floating SYNC pin starts acquisitions on its own, keep it low by default. */
+&tsc_sync_pd2 {
+	bias-pull-down;
 };
